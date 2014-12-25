@@ -113,7 +113,7 @@ def create_UDP_packet(source_mac,dest_mac,source_ip,dest_ip,source_port,dest_por
     packet[start_udp+UDP_HEADER_LENGTH:] = data
     
     if udp_checksum:
-        compute_UDP_checksum(packet[ETH_HEADER_SIZE:start_udp], packet[start_udp:])
+        packet[start_udp+6:start_udp+8] = struct.pack("!H",compute_UDP_checksum(packet[ETH_HEADER_SIZE:start_udp], packet[start_udp:]))
     
     return packet
 

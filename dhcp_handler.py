@@ -66,7 +66,8 @@ class DHCP_handler(SocketServer.DatagramRequestHandler):
             dest_ip_address = answer.yiaddr
             
         #Since the other host does not respond to ARP, to send the packet we need to use AF_PACKET sockets to specify manually its L2 address    
-        answer_data = create_UDP_packet(get_nic_addr(config.INTERFACE),answer.chaddr,config.SERVER_IP,dest_ip_address,config.SERVER_PORT,self.client_address[1],''.join(answer.to_payload()))
+        answer_data = create_UDP_packet(get_nic_addr(config.INTERFACE),answer.chaddr,config.SERVER_IP,dest_ip_address,
+                                        config.SERVER_PORT,self.client_address[1],''.join(answer.to_payload()),udp_checksum=True)
         answer_socket = socket.socket(socket.AF_PACKET,socket.SOCK_RAW)
         answer_socket.bind((config.INTERFACE,0))
         answer_socket.send(''.join(answer_data))
