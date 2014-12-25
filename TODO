@@ -1,0 +1,12 @@
+* Implement most common option requests in dhcp_option
+* handle DHCPINFORM, DHCPDECLINE & DHCPRELEASE
+* Error management - Logging
+* Fixed/Reserved IPs
+* What happens if IP pools if fully used?
+* Load configuration on server object (using hasattr(config,'attr_name')) to allow more flexible configuration (eg mandatory/optional fields, default values,...)
+		--> only server should access config file because it allows for other means of configuration (through command line for instance)
+* Daemon mode
+...
+n - Be entirely compliant with RFC2131 (in particular with "SHOULD")
+n+1 - Web Interface
+n+2 - SQL database instead of RAM usage?
