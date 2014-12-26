@@ -80,17 +80,17 @@ class Lease_manager(threading.Thread):
     def run(self):
         self._is_started.set()
         while self.started():
-            for ip in self.leased_ips.iterkeys():
+            for ip in self.leased_ips.keys():
                 if self.leased_ips[ip] < time.time():
                     self.server.release_ip(ip)
-                    self.remove_ip(ip)
+                    print "INFO: Lease expired for "+ip
             time.sleep(60) #FIXME: Magic constant, does it need to be set differently?
             
     def stop(self):
         self._is_started.clear()
         
     def started(self):
-        self._is_started.is_set()
+        return self._is_started.is_set()
         
         
 server=DHCP_server(config.SERVER_IP,config.SERVER_PORT,config.IP_POOL,DHCP_handler)

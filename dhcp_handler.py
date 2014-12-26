@@ -6,8 +6,7 @@ Created on Dec 21, 2014
 
 import SocketServer,socket,config
 from dhcp_message import DHCP_message,dhcp_magic_cookie
-from network_utils import create_UDP_packet, get_nic_addr,\
-    get_subnet_mask_from_prefix, get_broadcast_addr
+from network_utils import create_UDP_packet, get_nic_addr
 
 class DHCP_handler(SocketServer.DatagramRequestHandler):
     
@@ -37,14 +36,23 @@ class DHCP_handler(SocketServer.DatagramRequestHandler):
         return data[0:4]=="\x01\x01\x06\x00" and data[236:240]==dhcp_magic_cookie
     
     def handle_dhcp_discover(self,request):
-        attr_ip = self.server.get_next_ip()
+        #If the client requested a free IP address we give it to him
+        if request.dhcp_options.has_key(50):
+            attr_ip = socket.inet_ntoa(request.dhcp_options[50].payload)
+        if not self.server.is_ip_addr_free(attr_ip):
+            attr_ip = self.server.get_next_ip()
         answer = DHCP_message(orig_request=request,message_type="DHCPOFFER")
         answer.set_client_ip_addr(attr_ip)
         return answer
     
-    #TODO: Implement an actual policy, not just "accept every request"
+    '''
+        Crafts an answer to a DHCP request
+    '''
     def handle_dhcp_request(self,request):
-        requested_ip = socket.inet_ntoa(request.dhcp_options[50].payload)
+        if request.dhcp_options.has_key(50):
+            requested_ip = socket.inet_ntoa(request.dhcp_options[50].payload)
+        else:
+            requested_ip = request.ciaddr
         print request.chaddr+" requested "+requested_ip
         if self.server.is_ip_addr_free(requested_ip) or self.server.who_has_ip(requested_ip) == request.chaddr:
             answer = DHCP_message(orig_request=request,message_type="DHCPACK") #DHCPACK

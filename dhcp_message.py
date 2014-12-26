@@ -62,7 +62,7 @@ class DHCP_message:
     def create_options_from_request(self,orig_request,message_type):
         self.dhcp_options = {}
         self.dhcp_options[53] = DHCP_option(53,1,chr(dhcp_tton[message_type]))
-        self.dhcp_options[54] = DHCP_option(54,4,config.SERVER_IP)
+        self.dhcp_options[54] = DHCP_option(54,4,inet_aton(config.SERVER_IP))
         self.dhcp_type = dhcp_tton[message_type]
     
         if message_type is not 'DHCPNAK':
@@ -78,15 +78,6 @@ class DHCP_message:
     
     def get_dhcp_option(self,option_number):
         return self.dhcp_options[option_number]
-    
-    #FIXME: does this belong here or in dhcp_option.py?    
-    def set_dhcp_option(self,option_number,option_value):
-        if option_number is 51: #IP Lease time
-            self.dhcp_options[51] = DHCP_option(51,4,struct.pack("!I",option_value))
-        elif option_number is 1: #subnet mask
-            self.dhcp_options[1] = DHCP_option(1,4,inet_aton(option_value))
-        elif option_number is 28: #broadcast address
-            self.dhcp_options[28] = DHCP_option(28,4,inet_aton(option_value))
         
     def create_message_from_payload(self,payload):
         #BOOTP parameters
