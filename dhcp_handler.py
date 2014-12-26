@@ -49,9 +49,6 @@ class DHCP_handler(SocketServer.DatagramRequestHandler):
         if self.server.is_ip_addr_free(requested_ip) or self.server.who_has_ip(requested_ip) == request.chaddr:
             answer = DHCP_message(orig_request=request,message_type="DHCPACK") #DHCPACK
             answer.set_client_ip_addr(requested_ip)
-            answer.set_dhcp_option(51, config.LEASE_TIME) #Lease time
-            answer.set_dhcp_option(28, get_broadcast_addr(config.IP_POOL)) #Broadcast address
-            answer.set_dhcp_option(1,get_subnet_mask_from_prefix(config.IP_POOL)) #subnet mask
             self.server.register_user(requested_ip,answer.chaddr)
         else:
             answer = DHCP_message(orig_request=request,message_type="DHCPNAK") #DHCPNAK

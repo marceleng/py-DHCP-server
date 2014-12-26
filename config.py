@@ -20,3 +20,16 @@ BROADCAST_ADDR="default"
 
 #Lease time of a DHCP address in seconds
 LEASE_TIME=86400
+#DNS_SERVERS = ["8.8.8.8"]
+#NTP_SERVERS = [SERVER_IP]
+##List of IP addresses for router on the local subnet, by order of preference.
+ROUTERS = ["10.0.0.1"]
+
+'''
+    CONFIGURATION SCRIPTS
+    Do not change anything here.
+'''
+import network_utils
+SUBNET_MASK = network_utils.get_subnet_mask_from_prefix(IP_POOL)
+if BROADCAST_ADDR == "default":
+    BROADCAST_ADDR = network_utils.get_broadcast_addr(IP_POOL)

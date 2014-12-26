@@ -57,13 +57,27 @@ class DHCP_message:
         self.sname = None
         self.file = None
         
+        self.create_options_from_request(orig_request,message_type)
+         
+    def create_options_from_request(self,orig_request,message_type):
         self.dhcp_options = {}
         self.dhcp_options[53] = DHCP_option(53,1,chr(dhcp_tton[message_type]))
         self.dhcp_options[54] = DHCP_option(54,4,config.SERVER_IP)
         self.dhcp_type = dhcp_tton[message_type]
     
+        if message_type is not 'DHCPNAK':
+            handle_option_request(self, 51) #51: lease duration
+            if orig_request.dhcp_options.has_key(55): #55: parameter request list
+                request_list = orig_request.get_dhcp_option(55)
+                request_list = struct.unpack(str(request_list.length)+"B",request_list.payload)
+                for request in request_list:
+                    handle_option_request(self, request)
+
     def set_client_ip_addr(self,ip_addr):
         self.yiaddr = ip_addr
+    
+    def get_dhcp_option(self,option_number):
+        return self.dhcp_options[option_number]
     
     #FIXME: does this belong here or in dhcp_option.py?    
     def set_dhcp_option(self,option_number,option_value):
@@ -73,8 +87,6 @@ class DHCP_message:
             self.dhcp_options[1] = DHCP_option(1,4,inet_aton(option_value))
         elif option_number is 28: #broadcast address
             self.dhcp_options[28] = DHCP_option(28,4,inet_aton(option_value))
-        else:
-            raise NotImplementedError("Option number "+option_number+" is not supported")
         
     def create_message_from_payload(self,payload):
         #BOOTP parameters
@@ -147,6 +159,7 @@ class DHCP_message:
             
         payload[236:240] = dhcp_magic_cookie
         current_pos=240
+        #TODO: implement option ordering as specified in RFC2132
         for option in self.dhcp_options.itervalues():
             payload[current_pos:current_pos+2+option.length] = chr(option.number) + chr(option.length) + option.payload
             current_pos += (2+option.length)
