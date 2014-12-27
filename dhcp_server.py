@@ -4,21 +4,20 @@ Created on Dec 21, 2014
 @author: Marcel Enguehard
 '''
 
-import SocketServer,socket,threading, time
-import config
-import network_utils
+import SocketServer,socket,threading, time, logging
+import config, network_utils
 from dhcp_handler import DHCP_handler
 
 class DHCP_server(SocketServer.ThreadingMixIn,SocketServer.UDPServer):
     def __init__(self,ip,port,ip_pool,RequestHandlerClass):
+        self.logger = self.create_logger()
         SocketServer.UDPServer.__init__(self, ("",port), RequestHandlerClass)
-        print "Server starting..."
+        self.logger.debug('py-DHCP-server starting...')
         self.ip=ip
         self.port=port
         self.ip_pool = network_utils.get_ip_pool_from_string(ip_pool)
-        print "IP addresses pool: "+str(self.ip_pool)
+        self.logger.debug("IP addresses pool: %s",str(self.ip_pool))
         self.current_ip = self.ip_pool[0]
-        print "Current ip: "+self.current_ip
         self.attributed_ips = {self.ip : "server","10.0.0.0":"reserved"}
         self.lease_handler = Lease_manager(self)
     
@@ -55,12 +54,31 @@ class DHCP_server(SocketServer.ThreadingMixIn,SocketServer.UDPServer):
         self.lease_handler.join()
         SocketServer.UDPServer.shutdown(self)
         
+    def create_logger(self):
+        #Creates logger
+        logger = logging.getLogger('DHCP_server')
+        logger.setLevel(config.get_log_level())
+        
+        if config.LOG_TO_FILE:
+            ch = logging.FileHandler(config.LOG_FILE)
+        else:
+            ch = logging.StreamHandler()
+        ch.setLevel(config.get_log_level())
+        
+        formatter = logging.Formatter('%(asctime)s %(levelname)s: %(name)s - %(message)s')
+        ch.setFormatter(formatter)
+        
+        logger.addHandler(ch)
+        
+        return logger
+        
 class Lease_manager(threading.Thread):
     def __init__(self,server):
         threading.Thread.__init__(self)
         self.leased_ips = {}
         self._is_started = threading.Event()
         self.server = server
+        self.logger = logging.getLogger('DHCP_server')
     
     '''
         IP database management methods
@@ -83,8 +101,8 @@ class Lease_manager(threading.Thread):
             for ip in self.leased_ips.keys():
                 if self.leased_ips[ip] < time.time():
                     self.server.release_ip(ip)
-                    print "INFO: Lease expired for "+ip
-            time.sleep(60) #FIXME: Magic constant, does it need to be set differently?
+                    self.logger.info("Lease expired for %s",ip)
+            time.sleep(30) #FIXME: Magic constant, does it need to be set differently?
             
     def stop(self):
         self._is_started.clear()

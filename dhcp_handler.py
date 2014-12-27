@@ -4,11 +4,15 @@ Created on Dec 21, 2014
 @author: Marcel Enguehard
 '''
 
-import SocketServer,socket,config
+import SocketServer,socket,config,logging
 from dhcp_message import DHCP_message,dhcp_magic_cookie
 from network_utils import create_UDP_packet, get_nic_addr
 
 class DHCP_handler(SocketServer.DatagramRequestHandler):
+    
+    def __init__(self,request,client_address,server):
+        self.logger = logging.getLogger('DHCP_server')
+        SocketServer.DatagramRequestHandler.__init__(self,request,client_address,server)
     
     def handle(self):
         if self.is_DHCP_packet(): 
@@ -16,7 +20,7 @@ class DHCP_handler(SocketServer.DatagramRequestHandler):
                 request=DHCP_message(payload=self.request[0])
             except BaseException:
                 return            
-            print str(request)+" from "+str(self.client_address)
+            self.logger.debug("%s from %s",str(request),str(self.client_address))
             
             answer=None
             if request.dhcp_type==1: #DHCP discover
@@ -34,9 +38,9 @@ class DHCP_handler(SocketServer.DatagramRequestHandler):
             
             self.send(answer)
             
-            print "Sent: "+str(answer)
+            self.logger.debug("Sent: %s",str(answer))
         else:
-            print "Wrong format for packet..."
+            self.logger.error("Wrong format for packet from %s",self.client_address)
     
     #ie: BOOTREQUEST - 10mb ethernet - Address length=6 - 0hops and DHCP magic cookie is present    
     def is_DHCP_packet(self):
@@ -64,11 +68,12 @@ class DHCP_handler(SocketServer.DatagramRequestHandler):
             requested_ip = socket.inet_ntoa(request.dhcp_options[50].payload)
         else:
             requested_ip = request.ciaddr
-        print request.chaddr+" requested "+requested_ip
+        self.logger.debug("%s requested %s",request.chaddr,requested_ip)
         if self.server.is_ip_addr_free(requested_ip) or self.server.who_has_ip(requested_ip) == request.chaddr:
             answer = DHCP_message(orig_request=request,message_type="DHCPACK") #DHCPACK
             answer.set_client_ip_addr(requested_ip)
             self.server.register_user(requested_ip,answer.chaddr)
+            self.logger.info("Attributed %s to %s",requested_ip,answer.chaddr)
         else:
             answer = DHCP_message(orig_request=request,message_type="DHCPNAK") #DHCPNAK
         return answer
@@ -79,7 +84,7 @@ class DHCP_handler(SocketServer.DatagramRequestHandler):
     def handle_dhcp_decline(self,request):
         ip = socket.inet_ntoa(request.dhcp_options[50].payload)
         self.server.register_user(ip,"unknown")
-        print "ERROR: client declined offer from server. Check configuration"
+        self.logging.error("client declined offer from server. Check configuration")
     
     '''
         Handles the release of a lease by a client
@@ -90,9 +95,9 @@ class DHCP_handler(SocketServer.DatagramRequestHandler):
         
         if not self.server.is_ip_addr_free(released_ip_addr) and self.server.who_has_ip(released_ip_addr) == releasing_mac_addr:
             self.server.release_ip(released_ip_addr)
-            print "INFO: "+releasing_mac_addr+" released "+released_ip_addr
+            self.logger.info("%s released %s",releasing_mac_addr,released_ip_addr)
         else:
-            print "WARNING: client releasing wrong IP address"
+            self.logger.warning("client releasing wrong IP address")
     
     #Send a DHCP packet according to the parameters set in answer
     def send(self,answer):

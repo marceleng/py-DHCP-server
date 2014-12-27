@@ -6,7 +6,7 @@ Created on Dec 21, 2014
 from socket import inet_aton,inet_ntoa
 from network_utils import mac_hextostr,mac_strtohex
 from dhcp_option import DHCP_option, handle_option_request
-import config,struct
+import config,struct,logging
 
 dhcp_ntot = {1:"DHCPDISCOVER",
               2:"DHCPOFFER",
@@ -38,6 +38,7 @@ class DHCP_message:
     In (2), new_type has to be a server message, so one of [2,5,6] ("DHCPOFFER","DHCPACK","DHCPNACK")
     '''
     def __init__(self,payload=None,message_type=None,orig_request=None):
+        self.logger = logging.getLogger('DHCP_server')
         if payload:
             self.create_message_from_payload(payload)
         elif message_type in ["DHCPOFFER","DHCPACK","DHCPNAK"] and orig_request:
@@ -50,7 +51,7 @@ class DHCP_message:
         self.secs = "\x00\x00"
         self.broadcast_flag = orig_request.broadcast_flag
         self.ciaddr = orig_request.ciaddr
-        self.yiaddr = "0.0.0.0" #TODO: figure out implementation
+        self.yiaddr = "0.0.0.0"
         self.siaddr = config.SERVER_IP
         self.giaddr = None
         self.chaddr = orig_request.chaddr
@@ -120,7 +121,6 @@ class DHCP_message:
     #Convert instance to hexadecimal data ready to be sent
     def to_payload(self):
         payload_size = max(300,(240+self.get_options_size()+1)) #+1 is for option 255: end; 300 is the minimum BOOTP packet size according to RFC1542
-        print "Payload size is: "+str(payload_size)
         payload = ["\x00"] * payload_size
         
         #Setting the message op code
@@ -151,7 +151,7 @@ class DHCP_message:
             
         payload[236:240] = dhcp_magic_cookie
         current_pos=240
-        #TODO: implement option ordering as specified in RFC2132
+
         for option in self.dhcp_options.itervalues():
             payload[current_pos:current_pos+2+option.length] = chr(option.number) + chr(option.length) + option.payload
             current_pos += (2+option.length)
@@ -178,7 +178,7 @@ class DHCP_message:
             try:
                 total += (2+option.length)
             except AttributeError:
-                print "Error in message "+str(self)+" for option "+str(option)
+                self.logger.error("Error in message %s for option %s",str(self),str(option))
         return total
     
     def __str__ (self):

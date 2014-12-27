@@ -3,8 +3,10 @@ Created on Dec 22, 2014
 
 @author: Marcel Enguehard
 '''
-import config,network_utils,struct
+import config,struct,logging
 from _socket import inet_aton
+
+logger = logging.getLogger("DHCP_server")
 
 class DHCP_option:
     #See RFC2132 for options explanations: https://tools.ietf.org/html/rfc2132
@@ -64,11 +66,11 @@ def handle_option_request(request,option_number):
     elif option_number in [6,3,42]:
         option = create_mult_ips_option(option_number)
     else:
-        print 'WARNING: Option number "'+DHCP_option.dhcp_options[option_number]+'" is not supported'
+        logger.warning('Option number "%s" is not supported',DHCP_option.dhcp_options[option_number])
         return
     
     if option is None:
-        print 'WARNING: Could not set option "'+DHCP_option.dhcp_options[option_number]+'" for absence of configuration'
+        logger.warning('Could not set option "%s" for absence of configuration',DHCP_option.dhcp_options[option_number])
     else:
         request.dhcp_options[option_number] = option
 
