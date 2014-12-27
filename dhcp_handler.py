@@ -19,10 +19,18 @@ class DHCP_handler(SocketServer.DatagramRequestHandler):
             print str(request)+" from "+str(self.client_address)
             
             answer=None
-            if request.dhcp_type==1: #DHCP_discover
+            if request.dhcp_type==1: #DHCP discover
                 answer=self.handle_dhcp_discover(request)
-            elif request.dhcp_type==3: #DHCP_request
+            elif request.dhcp_type==3: #DHCP request
                 answer=self.handle_dhcp_request(request)
+            elif request.dhcp_type == 4: #DHCPDECLINE
+                self.handle_dhcp_decline(request)
+                return
+            elif request.dhcp_type==7:#DHCP Release
+                self.handle_dhcp_release(request)
+                return
+            elif request.dhcp_type == 8:#DHCP Inform
+                answer = self.handle_dhcp_inform(request)
             
             self.send(answer)
             
@@ -35,6 +43,9 @@ class DHCP_handler(SocketServer.DatagramRequestHandler):
         data=self.request[0]
         return data[0:4]=="\x01\x01\x06\x00" and data[236:240]==dhcp_magic_cookie
     
+    '''
+        Crafts a DHCPOFFER to respond to a DHCPDISCOVER
+    '''
     def handle_dhcp_discover(self,request):
         #If the client requested a free IP address we give it to him
         if request.dhcp_options.has_key(50):
@@ -46,7 +57,7 @@ class DHCP_handler(SocketServer.DatagramRequestHandler):
         return answer
     
     '''
-        Crafts an answer to a DHCP request
+        Crafts an answer to a DHCP request (either ACK or NACK)
     '''
     def handle_dhcp_request(self,request):
         if request.dhcp_options.has_key(50):
@@ -61,6 +72,27 @@ class DHCP_handler(SocketServer.DatagramRequestHandler):
         else:
             answer = DHCP_message(orig_request=request,message_type="DHCPNAK") #DHCPNAK
         return answer
+    
+    def handle_dhcp_inform(self,request):
+        return DHCP_message(orig_request=request,message_type="DHCPACK")
+        
+    def handle_dhcp_decline(self,request):
+        ip = socket.inet_ntoa(request.dhcp_options[50].payload)
+        self.server.register_user(ip,"unknown")
+        print "ERROR: client declined offer from server. Check configuration"
+    
+    '''
+        Handles the release of a lease by a client
+    '''
+    def handle_dhcp_release(self,request):
+        released_ip_addr = request.ciaddr
+        releasing_mac_addr = request.chaddr
+        
+        if not self.server.is_ip_addr_free(released_ip_addr) and self.server.who_has_ip(released_ip_addr) == releasing_mac_addr:
+            self.server.release_ip(released_ip_addr)
+            print "INFO: "+releasing_mac_addr+" released "+released_ip_addr
+        else:
+            print "WARNING: client releasing wrong IP address"
     
     #Send a DHCP packet according to the parameters set in answer
     def send(self,answer):

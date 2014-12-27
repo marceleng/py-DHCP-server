@@ -1,5 +1,3 @@
-* Implement most common option requests in dhcp_option + SORT OUT OPTION MANAGEMENT (move everything to dhcp_option)
-* handle DHCPINFORM, DHCPDECLINE & DHCPRELEASE
 * Error management - Logging
 * Fixed/Reserved IPs
 * What happens if IP pools if fully used?

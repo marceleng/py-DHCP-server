@@ -1,4 +1,4 @@
-A small DHCP server in python.
+A small DHCP server in python. Runs only on Linux as of now.
 
 Run as root "python dhcp_server.py"
 

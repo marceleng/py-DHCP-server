@@ -49,7 +49,7 @@ class DHCP_message:
         self.xid = orig_request.xid
         self.secs = "\x00\x00"
         self.broadcast_flag = orig_request.broadcast_flag
-        self.ciaddr = None #TODO: use it if node is in BOUND, RENEW or REBINDING state
+        self.ciaddr = orig_request.ciaddr
         self.yiaddr = "0.0.0.0" #TODO: figure out implementation
         self.siaddr = config.SERVER_IP
         self.giaddr = None
@@ -66,7 +66,8 @@ class DHCP_message:
         self.dhcp_type = dhcp_tton[message_type]
     
         if message_type is not 'DHCPNAK':
-            handle_option_request(self, 51) #51: lease duration
+            if orig_request.dhcp_type is not dhcp_tton["DHCPINFORM"]:
+                handle_option_request(self, 51) #51: lease duration
             if orig_request.dhcp_options.has_key(55): #55: parameter request list
                 request_list = orig_request.get_dhcp_option(55)
                 request_list = struct.unpack(str(request_list.length)+"B",request_list.payload)

@@ -19,7 +19,7 @@ BROADCAST_ADDR="default"
 
 
 #Lease time of a DHCP address in seconds
-LEASE_TIME=90
+LEASE_TIME=200
 #DNS_SERVERS = ["8.8.8.8"]
 #NTP_SERVERS = [SERVER_IP]
 ##List of IP addresses for router on the local subnet, by order of preference.
