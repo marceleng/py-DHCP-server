@@ -97,7 +97,7 @@ class DHCP_message:
         self.chaddr = mac_hextostr(payload[28:34])
         self.sname = self.get_null_terminated_string(payload[44:108])
         self.file = self.get_null_terminated_string(payload[108:236])
-        
+
         self.parse_DHCP_options(payload[240:])
     
     def parse_DHCP_options(self,payload):

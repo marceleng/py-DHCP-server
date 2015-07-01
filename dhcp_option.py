@@ -20,6 +20,7 @@ class DHCP_option:
                   15: "Domain Name",
                   26: "Interface MTU",
                   28: "Broadcast address",
+                  33: "Static route option",
                   42: "NTP Servers",
                   44: "Netbios over TCP/IP Name Server",
                   47: "Netbios over TCP/IP scope",
@@ -35,8 +36,11 @@ class DHCP_option:
                   59: "Rebinding Time Value",
                   60: "Vendor class identifier",
                   61: "Client-identifier",
+                  80: "Rapid commit",
+                  116:"Auto-configure",
                   119:"Domain Search",
-                  121:"Classless Static Route"
+                  121:"Classless Static Route",
+                  145:"FORCERENEW_NONCE_CAPABLE"
     }
     
     dhcp_attributes={
@@ -46,6 +50,7 @@ class DHCP_option:
                      28:  "BROADCAST_ADDR",
                      42:  "NTP_SERVERS",
                      51:  "LEASE_TIME",
+                     116: "AUTO_CONFIG",
                      }
     
     def __init__(self,option_number,option_length,option_payload):
@@ -65,6 +70,8 @@ def handle_option_request(request,option_number):
         option = create_integer_option(option_number)
     elif option_number in [6,3,42]:
         option = create_mult_ips_option(option_number)
+    elif option_number in [116]:
+        option = create_bool_option(option_number)
     else:
         logger.warning('Option number "%s" is not supported',DHCP_option.dhcp_options[option_number])
         return
@@ -98,3 +105,11 @@ def create_mult_ips_option(option_number):
         return DHCP_option(option_number,4*len(ip_array),''.join(map(inet_aton,ip_array)))
     else:
         return None
+
+def create_bool_option(option_number):
+    option_name = DHCP_option.dhcp_attributes[option_number]
+    if hasattr(config,option_name):
+        return DHCP_option(option_number,1,struct.pack("!?",getattr(config,option_name)))
+    else:
+        return None
+	

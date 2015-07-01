@@ -19,6 +19,7 @@ class DHCP_handler(SocketServer.DatagramRequestHandler):
             try:
                 request=DHCP_message(payload=self.request[0])
             except BaseException:
+		self.logger.warning("Error while parsing message %s"%self.request[0])
                 return            
             self.logger.debug("%s from %s",str(request),str(self.client_address))
             
@@ -52,9 +53,10 @@ class DHCP_handler(SocketServer.DatagramRequestHandler):
     '''
     def handle_dhcp_discover(self,request):
         #If the client requested a free IP address we give it to him
+	attr_ip=None
         if request.dhcp_options.has_key(50):
             attr_ip = socket.inet_ntoa(request.dhcp_options[50].payload)
-        if not self.server.is_ip_addr_free(attr_ip):
+        while not (attr_ip and self.server.is_ip_addr_free(attr_ip)):
             attr_ip = self.server.get_next_ip()
         answer = DHCP_message(orig_request=request,message_type="DHCPOFFER")
         answer.set_client_ip_addr(attr_ip)

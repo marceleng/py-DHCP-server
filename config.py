@@ -25,6 +25,10 @@ LEASE_TIME=200
 ##List of IP addresses for router on the local subnet, by order of preference.
 ROUTERS = ["10.0.0.1"]
 
+#Keep to False unless you know what you're doing
+#See http://tools.ietf.org/html/rfc2563
+AUTO_CONFIG = False
+
 #Default mode: logs to console.
 #LOG_TO_FILE=True
 #LOG_FILE='/var/log/pydhcp.log'
