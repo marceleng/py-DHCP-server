@@ -70,12 +70,21 @@ def get_next_ip(ip_pool,current_ip):
         return min_bound
     else:
         return ip4_ntoa(ip_as_uint+1)
-    
+
+def double_zeros(s):
+    if s=="0":
+        return "00"
+    else:
+        return s
+
 def mac_hextostr(hex_payload):
-    return ":".join(map(lambda x : x.replace("0","00"), map(lambda x : format(ord(x),"x"),hex_payload)))
+    return ":".join(map(double_zeros, map(lambda x : format(ord(x),"x"),hex_payload)))
 
 def mac_strtohex(mac_as_str):
-    return "".join(map(lambda x : chr(int(x,16)),mac_as_str.split(":")))
+    try:
+        return "".join(map(lambda x : chr(int(x,16)),mac_as_str.split(":")))
+    except Exception:
+        print("Failed mac_strtohex with "+mac_as_str)
 
 '''
     Returns the mac address of the corresponding interface
